@@ -1,117 +1,121 @@
-// src/pages/TaskManager.jsx
 import { useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import React from 'react';
+import useLocalStorage from '../hooks/useLocalStorage';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { FiPlus, FiFilter, FiSearch } from 'react-icons/fi';
 
-const TaskManager = () => {
+export default function TaskManager() {
   const [tasks, setTasks] = useLocalStorage('tasks', []);
-  const [newTaskText, setNewTaskText] = useState('');
+  const [newTask, setNewTask] = useState('');
   const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const addTask = (text) => {
-    if (text.trim()) {
+  const addTask = () => {
+    if (newTask.trim()) {
       setTasks([
         ...tasks,
-        { id: Date.now(), text, completed: false, createdAt: new Date().toISOString() },
+        {
+          id: Date.now().toString(),
+          title: newTask,
+          description: '',
+          status: 'todo',
+          priority: 'medium',
+          dueDate: 'Dec 31, 2025',
+          daysLeft: 10,
+          assignee: { initials: 'NA' },
+          tags: ['Task'],
+        },
       ]);
+      setNewTask('');
     }
   };
 
-  const toggleTask = (id) => {
-    setTasks(tasks.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)));
+  const handleStatusChange = (taskId, status) => {
+    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status } : task)));
   };
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const deleteTask = (taskId) => {
+    setTasks(tasks.filter((task) => task.id !== taskId));
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    if (filter === 'all') return true;
-    if (filter === 'active') return !task.completed;
-    if (filter === 'completed') return task.completed;
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    addTask(newTaskText);
-    setNewTaskText('');
-  };
+  const filteredTasks = tasks.filter(
+    (task) =>
+      (filter === 'all' || task.status === filter) &&
+      task.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="p-4">
-      <Card className="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Task Dashboard</h2>
-        <form onSubmit={handleSubmit} className="mb-6">
-          <div className="flex gap-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 pt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Task Manager</h1>
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex items-center space-x-2 flex-1">
+            <div className="relative flex-1">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                className="pl-10 w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                setFilter(
+                  filter === 'all'
+                    ? 'completed'
+                    : filter === 'completed'
+                    ? 'in-progress'
+                    : filter === 'in-progress'
+                    ? 'todo'
+                    : 'all'
+                )
+              }
+            >
+              <FiFilter className="h-4 w-4 mr-1" />
+              {filter === 'all' ? 'All' : filter.replace('-', ' ')}
+            </Button>
+          </div>
+          <div className="flex items-center space-x-2">
             <input
               type="text"
-              value={newTaskText}
-              onChange={(e) => setNewTaskText(e.target.value)}
-              placeholder="Add a new task..."
-              className="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="New task..."
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newTask}
+              onChange={(e) => setNewTask(e.target.value)}
             />
-            <Button type="submit" variant="primary" className="px-6 py-2">
+            <Button variant="primary" size="sm" onClick={addTask}>
+              <FiPlus className="h-4 w-4 mr-1" />
               Add Task
             </Button>
           </div>
-        </form>
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={filter === 'all' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setFilter('all')}
-          >
-            All
-          </Button>
-          <Button
-            variant={filter === 'active' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setFilter('active')}
-          >
-            Active
-          </Button>
-          <Button
-            variant={filter === 'completed' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setFilter('completed')}
-          >
-            Completed
-          </Button>
         </div>
-        <ul className="space-y-4">
-          {filteredTasks.length === 0 ? (
-            <li className="text-gray-500 dark:text-gray-400 text-center py-4">No tasks found</li>
-          ) : (
-            filteredTasks.map((task) => (
-              <li
-                key={task.id}
-                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTasks.map((task) => (
+            <div key={task.id} className="relative group">
+              <Card task={task} onStatusChange={handleStatusChange} />
+              <Button
+                variant="danger"
+                size="sm"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => deleteTask(task.id)}
+                aria-label="Delete task"
               >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleTask(task.id)}
-                    className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className={task.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-white'}>
-                    {task.text}
-                  </span>
-                </div>
-                <Button variant="danger" size="sm" onClick={() => deleteTask(task.id)} aria-label="Delete task">
-                  Delete
-                </Button>
-              </li>
-            ))
-          )}
-        </ul>
-        <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-          <p>{tasks.filter((task) => !task.completed).length} tasks remaining</p>
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6 6h8v10a2 2 0 01-2 2H8a2 2 0 01-2-2V6zm2-2a1 1 0 00-1 1H5a1 1 0 00-1 1v1h12V6a1 1 0 00-1-1h-2a1 1 0 00-1-1H8z" />
+                </svg>
+              </Button>
+            </div>
+          ))}
         </div>
-      </Card>
+        {filteredTasks.length === 0 && (
+          <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No tasks found.</p>
+        )}
+      </div>
     </div>
   );
-};
-
-export default TaskManager;
+}

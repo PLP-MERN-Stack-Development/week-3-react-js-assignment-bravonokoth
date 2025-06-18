@@ -1,6 +1,6 @@
-// src/App.jsx
+import React from 'react'; // Add this import
 import { Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext.jsx'; // Updated extension
+import { ThemeProvider } from './context/ThemeContext.jsx';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import TaskManager from './pages/TaskManager';

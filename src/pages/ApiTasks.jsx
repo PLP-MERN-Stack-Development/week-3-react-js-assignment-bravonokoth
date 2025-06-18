@@ -1,64 +1,92 @@
-// src/pages/ApiTasks.jsx
-import { useState } from 'react';
-import { useTasksApi } from '../hooks/useTasksApi';
-import Card from '../components/Card';
+import { useState, useEffect } from 'react';
+import { FiSearch } from 'react-icons/fi';
 import Button from '../components/Button';
+import Card from '../components/Card';
+import React from 'react';
 
 export default function ApiTasks() {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const { tasks, loading, error, totalPages } = useTasksApi(page);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`https://jsonplaceholder.typicode.com/todos?_page=${page}&_limit=10`)
+      .then((res) => res.json())
+      .then((data) => {
+        setTasks(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [page]);
 
   const filteredTasks = tasks.filter((task) =>
-    task.title.toLowerCase().includes(search.toLowerCase())
+    task.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="p-4">
-      <Card className="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">API Task Dashboard</h2>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search tasks..."
-          className="w-full p-2 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-        />
-        {loading && <p className="text-center text-gray-600 dark:text-gray-300">Loading...</p>}
-        {error && <p className="text-center text-red-500 dark:text-red-400">{error}</p>}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 pt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">API Tasks</h1>
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              className="pl-10 w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        {loading && <p className="text-center text-gray-500 dark:text-gray-400">Loading...</p>}
+        {error && <p className="text-center text-red-500 dark:text-red-400">Error: {error}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTasks.map((task) => (
-            <div
+            <Card
               key={task.id}
-              className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow hover:shadow-lg transition-shadow"
-            >
-              <h3 className={task.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-white'}>
-                {task.title}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Status: {task.completed ? 'Completed' : 'Active'}
-              </p>
-            </div>
+              task={{
+                id: task.id.toString(),
+                title: task.title,
+                description: '',
+                status: task.completed ? 'completed' : 'todo',
+                priority: 'medium',
+                dueDate: 'N/A',
+                daysLeft: 0,
+                assignee: { initials: 'NA' },
+                tags: ['API'],
+              }}
+              onStatusChange={() => {}}
+            />
           ))}
         </div>
-        <div className="flex justify-between mt-4">
+        {filteredTasks.length === 0 && !loading && !error && (
+          <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No tasks found.</p>
+        )}
+        <div className="flex justify-between mt-6">
           <Button
             variant="secondary"
+            size="sm"
             onClick={() => setPage((p) => Math.max(p - 1, 1))}
             disabled={page === 1}
           >
             Previous
           </Button>
-          <span className="text-gray-600 dark:text-gray-300">Page {page} of {totalPages}</span>
           <Button
             variant="secondary"
-            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-            disabled={page === totalPages}
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
           >
             Next
           </Button>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
